@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+
+  order-mysql:
+    container_name: order-mysql
+    image: mysql:8.2.0
+    build:
+      context: ./mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/conf:/etc/mysql/conf.d
+      - ./mysql/logs:/logs
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/db:/docker-entrypoint-initdb.d/
+
+
+    command: [
+      'mysqld',
+      '--innodb-buffer-pool-size=80M',
+      '--character-set-server=utf8mb4',
+      '--collation-server=utf8mb4_unicode_ci',
+      '--default-time-zone=+8:00',
+      '--lower-case-table-names=1'
+    ]
+    privileged: true
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 5
+    environment:
+        MYSQL_ROOT_PASSWORD: 'root'
+
+
+
+  orders-project:
+    container_name: orders-project
+    build:
+          context: ./orders-project
+          dockerfile: dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - order-mysql
+    links:
+      - order-mysql
